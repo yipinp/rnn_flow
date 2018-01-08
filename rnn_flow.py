@@ -1,9 +1,11 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset,DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 import torchvision
 from PIL import Image
+import torch.nn.functional as F
 
 #create kitti dataset
 def default_loader(path):
@@ -63,6 +65,53 @@ class kitti2015_test_dataset(Dataset) :
 
 train_data = kitti2015_train_dataset(txt='', transform=torchvision.transforms.ToTensor())
 data_loader = DataLoader(train_data,batch_size=8, shuffle=True)
+
+class rnn_flow(torch.nn.Module):
+    def __init__(self,input_size,hidden_size,num_layers)):
+        super(rnn_flow,self).__init__()
+        self.rnn0 = torch.nn.LSTM(
+            input_size = input_size,
+            hidden_size = hidden_size
+            num_layers = num_layers
+            batch_first = True,
+        )
+
+        self.rnn1 = torch.nn.LSTM(
+            input_size = input_size,
+            hidden_size = hidden_size
+            num_layers = num_layers
+            batch_first = True,
+        )
+
+        self.conv1= nn.Sequential(
+            nn.Conv2d(
+                in_channels= 3,
+                out_channels= 16,
+                kernel_size= 3,
+                stride= 1,
+                padding = 1,
+            )
+            nn.ReLU()
+            #nn.MaxPool2d(kernel_size=2)
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(16,32,3,1,1)
+            nn.ReLU()
+
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(32, 32, 3, 1, 1)
+            nn.ReLU()
+        )
+
+    def forward(self,left,right):
+        x = torch.cat((left,right),dim=0)
+        x = self.conv1(x)
+        x = self.base_layer(x)
+        return x
+
+
 
 
 
