@@ -63,23 +63,23 @@ class kitti2015_test_dataset(Dataset) :
     def __len__(self):
         return len(self.imgs)
 
-train_data = kitti2015_train_dataset(txt='', transform=torchvision.transforms.ToTensor())
+train_data = kitti2015_train_dataset(txt=r'C:\DL_project\rnn_flow\img.txt', transform=torchvision.transforms.ToTensor())
 data_loader = DataLoader(train_data,batch_size=8, shuffle=True)
 
 class rnn_flow(torch.nn.Module):
-    def __init__(self,input_size,hidden_size,num_layers)):
+    def __init__(self,input_size,hidden_size,num_layers):
         super(rnn_flow,self).__init__()
         self.rnn0 = torch.nn.LSTM(
             input_size = input_size,
-            hidden_size = hidden_size
-            num_layers = num_layers
+            hidden_size = hidden_size,
+            num_layers = num_layers,
             batch_first = True,
         )
 
         self.rnn1 = torch.nn.LSTM(
             input_size = input_size,
-            hidden_size = hidden_size
-            num_layers = num_layers
+            hidden_size = hidden_size,
+            num_layers = num_layers,
             batch_first = True,
         )
 
@@ -90,26 +90,29 @@ class rnn_flow(torch.nn.Module):
                 kernel_size= 3,
                 stride= 1,
                 padding = 1,
-            )
-            nn.ReLU()
+            ),
+            nn.ReLU(),
             #nn.MaxPool2d(kernel_size=2)
-        )
-
-        self.conv2 = nn.Sequential(
-            nn.Conv2d(16,32,3,1,1)
-            nn.ReLU()
-
-        )
-        self.conv3 = nn.Sequential(
-            nn.Conv2d(32, 32, 3, 1, 1)
-            nn.ReLU()
+            nn.Conv2d(16,32,3,1,1),
+            nn.ReLU(),
+            nn.Conv2d(32, 32, 3, 1, 1),
+            nn.ReLU(),
+            nn.Conv2d(32, 2, 3, 1, 1),
+            nn.ReLU(),
         )
 
     def forward(self,left,right):
-        x = torch.cat((left,right),dim=0)
+        x0 = torch.cat((left,right),dim=1)
+        x0 = self.rnn0(x0)
+        x1 = torch.cat((right,left),dim=1)
+        x1 = self.rnn1(x1)
+        x =  torch.cat((x0,x1),dim=1)
         x = self.conv1(x)
-        x = self.base_layer(x)
         return x
+
+network = rnn_flow(256*256,256*256,1)
+print(network)
+
 
 
 
